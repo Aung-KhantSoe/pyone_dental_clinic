@@ -36,6 +36,11 @@
                 <td>:</td>
                 <td>{{ $record->phone2 }}</td>
             </tr>
+            <tr>
+                <td>Medication History</td>
+                <td>:</td>
+                <td>{{ $record->treatment_history }}</td>
+            </tr>
         </table>
     </div>
     <div class="container mt-5">
@@ -52,7 +57,7 @@
                     <div class="card-header" id="heading{{ $index }}">
                         <h2 class="mb-0">
                             <button class="accordion-toggle" onclick="toggleAccordion('content{{ $index }}')">
-                                Treatment on {{ $treatment->treatment_date }} by Dr. {{ $treatment->doctor->name }}
+                                Treatment on {{ $treatment->treatment_date }} by {{ $treatment->doctor->name }}
                             </button>
                             <button class="btn-icon" onclick="toggleImages('images{{ $index }}')">Show
                                 Images</button>
@@ -75,12 +80,13 @@
                                 <tr>
                                     <td>{{ $treatment->treatment_date }}</td>
                                     <td>{{ $treatment->doctor->name }}</td>
-                                    <td>{{ $treatment->treatment_charges }}</td>
-                                    <td>{{ $treatment->xray_fees??0 }}</td>
-                                    <td>{{ $treatment->medication_fees??0  }}</td>
-                                    <td>{{ $treatment->total }}</td>
-                                    <td>{{ $treatment->payments->sum('amount') }}</td>
-                                    <td>{{ $treatment->total - $treatment->payments->sum('amount') }}</td>
+                                    <td style="color: #f59e0b">{{ number_format($treatment->treatment_charges, 0, '.', ',') }}</td>
+                                    <td style="color: #f59e0b">{{ number_format($treatment->xray_fees ?? 0, 0, '.', ',') }}</td>
+                                    <td style="color: #f59e0b">{{ number_format($treatment->medication_fees ?? 0, 0, '.', ',') }}</td>
+                                    <td style="color: #f59e0b">{{ number_format($treatment->total, 0, '.', ',') }}</td>
+                                    <td style="color: green">{{ number_format($treatment->payments->sum('amount'), 0, '.', ',') }}</td>
+                                    <td style="color: crimson">{{ number_format($treatment->total - $treatment->payments->sum('amount'), 0, '.', ',') }}
+                                    </td>
                                 </tr>
                             </table>
                             <table id="payment">
@@ -89,27 +95,27 @@
                                     <th>Paid Amount</th>
                                 </tr>
                                 @foreach ($payments as $payment)
-                                <tr>
-                                    <td>
-                                        {{ $payment->paid_date }}
-                                    </td>
-                                    <td>
-                                        {{ $payment->amount }}
-                                    </td>
-                                </tr>
-
+                                    <tr>
+                                        <td>
+                                            {{ $payment->paid_date }}
+                                        </td>
+                                        <td style="color: green">
+                                            {{ number_format($payment->amount, 0, '.', ',') }}
+                                        </td>
+                                    </tr>
                                 @endforeach
                             </table>
 
                             <div style="color: black;margin:3px 0">
-                                <strong>Treatment Type</strong>
+                                <strong style="font-size: 14px">Treatment Type</strong>
                                 <p>{{ $treatment->treatment_type }}</p>
                             </div>
                             <div style="color: black">
-                                <strong>Diagnosis</strong>
+                                <strong style="font-size: 14px">Diagnosis</strong>
                                 <p>{{ $treatment->diagnosis }}</p>
                             </div>
-                            <div id="images{{ $index }}" class="images-container" style="display: none;margin-top:20px">
+                            <div id="images{{ $index }}" class="images-container"
+                                style="display: none;margin-top:20px">
                                 @foreach ($attachments as $attachment)
                                     <img class="custom-card-img" src="{{ asset('storage/' . $attachment->location) }}"
                                         alt="" title="" width="100px" height="100px" />
@@ -185,7 +191,7 @@
     .btn-icon {
         background: none;
         border: none;
-        color: white;
+        color: #f59e0b;
         font-size: 1rem;
         cursor: pointer;
     }
@@ -197,15 +203,20 @@
         background-color: #f8f9fa;
         border-bottom-left-radius: 15px;
         border-bottom-right-radius: 15px;
+        overflow: scroll;
+
     }
 
     .custom-card-img {
         margin: 5px;
         border-radius: 5px;
     }
+
     #patient td {
-        padding: 10px
+        padding: 10px;
+        vertical-align: top
     }
+
     #treatment {
         width: 100%;
         margin-bottom: 1rem;
@@ -213,18 +224,28 @@
         color: black;
     }
 
-    #treatment th,
+    #treatment th {
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+        color: black;
+        font-size: 14px;
+        vertical-align: top;
+    }
+
     #treatment td {
         padding: 10px;
         text-align: left;
         border-bottom: 1px solid #ddd;
         color: black;
+        font-size: 14px;
     }
 
     #treatment th {
         /* background-color: #007bff; */
         color: black;
     }
+
     #payment {
         width: 100%;
         margin-bottom: 1rem;
@@ -238,19 +259,23 @@
         text-align: left;
         border-bottom: 1px solid #ddd;
         color: black;
+        font-size: 14px;
     }
 
     #payment th {
         /* background-color: #007bff; */
         color: black;
     }
-    #info{
+
+    #info {
         color: black;
         padding: 10px;
     }
-    #info td{
+
+    #info td {
         vertical-align: top
     }
+
     .images-container {
         display: flex;
         flex-wrap: wrap;

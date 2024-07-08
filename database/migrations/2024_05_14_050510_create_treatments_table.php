@@ -25,7 +25,7 @@ class CreateTreatmentsTable extends Migration
                     ->references('id')->on('users')
                     ->onDelete('cascade')->nullable();
             $table->text('treatment_type');
-            $table->text('diagnosis');
+            $table->text('diagnosis')->nullable();
             $table->date('treatment_date');
             $table->double("treatment_charges");
             $table->double("xray_fees")->nullable();

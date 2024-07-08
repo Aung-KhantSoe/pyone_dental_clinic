@@ -6,6 +6,7 @@ use App\Filament\Resources\PatientResource\Pages;
 use App\Filament\Resources\PatientResource\RelationManagers;
 use App\Models\Doctor;
 use App\Models\Patient;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -65,7 +66,7 @@ class PatientResource extends Resource
                     ->label('Address')
                     ->nullable(),
                 Forms\Components\Textarea::make('treatment_history')
-                    ->label('Treatment History')
+                    ->label('Medication History')
                     ->nullable(),
 
                 Forms\Components\TextInput::make('phone1')
@@ -100,7 +101,6 @@ class PatientResource extends Resource
                                             ->rows(1)
                                             ->cols(20)
                                             ->label('Diagnosis')
-                                            ->required()
                                             ->columnSpan(1),
                                         Forms\Components\DatePicker::make('treatment_date')
                                             ->label('Treatment Date')
@@ -116,11 +116,13 @@ class PatientResource extends Resource
                                             ->label('Xray Charges')
                                             ->numeric()
                                             ->default(0)
+                                            ->required()
                                             ->columnSpan(1),
                                         Forms\Components\TextInput::make('medication_fees')
                                             ->label('Medication Charges')
                                             ->numeric()
                                             ->default(0)
+                                            ->required()
                                             ->columnSpan(1),
                                         TextInput::make('total')
                                             ->label('Total')
@@ -177,12 +179,12 @@ class PatientResource extends Resource
                     'danger' => 'female',
                     'secondary' => 'other'
                 ])->searchable(),
-                Tables\Columns\TextColumn::make('address')->label('Address')->searchable(),
+                // Tables\Columns\TextColumn::make('address')->label('Address')->searchable(),
                 Tables\Columns\TextColumn::make('phone1')->label('Phone 1')->searchable(),
-                Tables\Columns\TextColumn::make('treatments_count')->counts('treatments')->label('Treatment Count')->sortable(),
+                // Tables\Columns\TextColumn::make('treatments_count')->counts('treatments')->label('Treatment Count')->sortable(),
                 Tables\Columns\TextColumn::make('created_at')->label('Created At')->dateTime()->searchable()->sortable(),
 
-            ])
+            ])->defaultSort('created_at','desc')
             ->filters([
                 // Filter::make('created_at')
                 //     ->form([
@@ -200,6 +202,12 @@ class PatientResource extends Resource
                 //                 fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
                 //             );
                 //     }),
+                Filter::make('Today')
+                    ->label('Today')
+                    ->query(fn (Builder $query): Builder => $query->whereDate('created_at', Carbon::today())),
+                Filter::make('Yesterday')
+                    ->label('Yesterday')
+                    ->query(fn (Builder $query): Builder => $query->whereDate('created_at', Carbon::yesterday())),
                 DateFilter::make('created_at'),
 
                 TextFilter::make('patientID')->label('Patient ID'),

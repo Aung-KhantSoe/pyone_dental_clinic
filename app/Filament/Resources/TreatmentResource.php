@@ -7,6 +7,7 @@ use App\Filament\Resources\TreatmentResource\RelationManagers;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Treatment;
+use Carbon\Carbon;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -26,6 +27,7 @@ use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Facades\Auth;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Illuminate\Database\Eloquent\Model;
 use Webbingbrasil\FilamentAdvancedFilter\Filters\DateFilter;
 use Webbingbrasil\FilamentAdvancedFilter\Filters\NumberFilter;
@@ -61,8 +63,7 @@ class TreatmentResource extends Resource
                 Forms\Components\TextArea::make('diagnosis')
                     ->rows(1)
                     ->cols(20)
-                    ->label('Diagnosis')
-                    ->required(),
+                    ->label('Diagnosis'),
                 Forms\Components\DatePicker::make('treatment_date')
                     ->label('Treatment Date')
                     ->default(today())
@@ -74,10 +75,12 @@ class TreatmentResource extends Resource
                 Forms\Components\TextInput::make('xray_fees')
                     ->label('Xray Charges')
                     ->default(0)
+                    ->required()
                     ->numeric(),
                 Forms\Components\TextInput::make('medication_fees')
                     ->label('Medication Charges')
                     ->default(0)
+                    ->required()
                     ->numeric(),
                 TextInput::make('total')
                     ->label('Total')
@@ -120,6 +123,7 @@ class TreatmentResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $today = Carbon::now()->format('YYYY-mm-dd');
         return $table
             ->columns([
                 TextColumn::make('doctor.name')->label('Doctor')->searchable(),
@@ -135,12 +139,17 @@ class TreatmentResource extends Resource
                         return $record->total - $record->payments_sum_amount;
                     })->formatStateUsing(fn (string $state): string => number_format($state, 0, '.', ','))
 
-            ])
+            ])->defaultSort('treatment_date','desc')
             // ->addColumn('debt', function ($resource) {
             //     return $resource->total - $resource->payments_sum_amount;
             // })
             ->filters([
-                //
+                Filter::make('Today')
+                    ->label('Today')
+                    ->query(fn (Builder $query): Builder => $query->whereDate('treatment_date', Carbon::today())),
+                Filter::make('Yesterday')
+                    ->label('Yesterday')
+                    ->query(fn (Builder $query): Builder => $query->whereDate('treatment_date', Carbon::yesterday())),
                 SelectFilter::make('doctor_id')
                     ->label('Doctor')
                     ->relationship('doctor', 'name'),
