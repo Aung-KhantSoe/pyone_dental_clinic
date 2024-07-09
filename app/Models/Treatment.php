@@ -26,4 +26,8 @@ class Treatment extends Model
     {
         return $this->hasMany('App\Models\Payment');
     }
+    public function sumPaymentsToday()
+    {
+        return $this->payments()->whereDate('paid_date', today())->sum('amount');
+    }
 }

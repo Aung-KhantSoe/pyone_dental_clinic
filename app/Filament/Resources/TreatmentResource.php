@@ -14,21 +14,22 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Form;
 use Filament\Resources\Resource;
 use Filament\Resources\Table;
 use Filament\Tables;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
-use Illuminate\Support\Facades\Auth;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Webbingbrasil\FilamentAdvancedFilter\Filters\DateFilter;
 use Webbingbrasil\FilamentAdvancedFilter\Filters\NumberFilter;
 
@@ -121,6 +122,11 @@ class TreatmentResource extends Resource
             ]);
     }
 
+    protected static function sumPaymentsToday($record)
+    {
+        $tdy_paid_amt = $record->payments()->whereDate('paid_date', Carbon::today())->sum('amount');
+        return $tdy_paid_amt;
+    }
     public static function table(Table $table): Table
     {
         $today = Carbon::now()->format('YYYY-mm-dd');
@@ -133,23 +139,42 @@ class TreatmentResource extends Resource
                 TextColumn::make('xray_fees')->label('Xray Charges')->formatStateUsing(fn (string $state): string => number_format($state, 0, '.', ','))->color('primary')->searchable()->sortable(),
                 TextColumn::make('medication_fees')->label('Medication Charges')->formatStateUsing(fn (string $state): string => number_format($state, 0, '.', ','))->color('primary')->searchable()->sortable(),
                 TextColumn::make('total')->label('Total')->formatStateUsing(fn (string $state): string => number_format($state, 0, '.', ','))->color('primary')->searchable()->sortable(),
-                TextColumn::make('payments_sum_amount')->sum('payments','amount')->label('Paid')->formatStateUsing(fn (string $state): string => number_format($state, 0, '.', ','))->color('success')->sortable(),
+                TextColumn::make('payments_sum_amount')->sum('payments', 'amount')->label('Paid')->formatStateUsing(fn (string $state): string => number_format($state, 0, '.', ','))->color('success')->sortable(),
+                TextColumn::make('paid_today')
+                ->label('Paid Today')
+                ->formatStateUsing(function (Treatment $record) {
+                        return number_format($record->sumPaymentsToday(), 0, '.', ',');
+                })->color('success'),
                 TextColumn::make('debt')->color('danger')
-                    ->getStateUsing(function(Model $record) {
+                    ->getStateUsing(function (Model $record) {
                         return $record->total - $record->payments_sum_amount;
                     })->formatStateUsing(fn (string $state): string => number_format($state, 0, '.', ','))
 
-            ])->defaultSort('treatment_date','desc')
+            ])->defaultSort('treatment_date', 'desc')
             // ->addColumn('debt', function ($resource) {
             //     return $resource->total - $resource->payments_sum_amount;
             // })
             ->filters([
                 Filter::make('Today')
                     ->label('Today')
-                    ->query(fn (Builder $query): Builder => $query->whereDate('treatment_date', Carbon::today())),
+                    ->query(function (Builder $query) {
+                        $query->where(function ($query) {
+                            $query->whereDate('treatment_date', Carbon::today())
+                                ->orWhereHas('payments', function ($paymentQuery) {
+                                    $paymentQuery->whereDate('paid_date', Carbon::today());
+                                });
+                        });
+                    }),
                 Filter::make('Yesterday')
                     ->label('Yesterday')
-                    ->query(fn (Builder $query): Builder => $query->whereDate('treatment_date', Carbon::yesterday())),
+                    ->query(function (Builder $query) {
+                        $query->where(function ($query) {
+                            $query->whereDate('treatment_date', Carbon::yesterday())
+                                ->orWhereHas('payments', function ($paymentQuery) {
+                                    $paymentQuery->whereDate('paid_date', Carbon::yesterday());
+                                });
+                        });
+                    }),
                 SelectFilter::make('doctor_id')
                     ->label('Doctor')
                     ->relationship('doctor', 'name'),

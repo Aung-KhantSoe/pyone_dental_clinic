@@ -2,7 +2,7 @@
     <x-tables::cell>
         {{-- for the checkbox column --}}
     </x-tables::cell>
-
+    {{-- @dd($records) --}}
     @foreach ($columns as $column)
         <x-tables::cell
             wire:loading.remove.delay
@@ -14,7 +14,13 @@
                         <div class="filament-tables-text-column px-4 py-2 flex w-full justify-start text-start">
                             <div class="inline-flex items-center space-x-1 rtl:space-x-reverse">
                                 <span class="font-medium">
-                                    @if ($column->getName() == 'debt')
+                                    @if($column->getName() == 'paid_today')
+                                    @php
+                                        $paid_today = DB::table('payments')->whereDate('paid_date', today())->sum('amount');
+                                    @endphp
+                                    <strong>{{ $paid_today??"0" }}
+                                    </strong>
+                                    @elseif ($column->getName() == 'debt')
                                     <strong>{{number_format($records->sum($calc_columns[3]) - $records->sum($calc_columns[4]), 0, '.', ',')}}
                                     </strong>
                                     @else

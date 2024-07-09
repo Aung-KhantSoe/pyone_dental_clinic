@@ -9,4 +9,9 @@ class Payment extends Model
 {
     use HasFactory;
     protected $guarded = [];
+
+    public function treatment()
+    {
+        return $this->belongsTo('App\Models\Treatment','treatment_id');
+    }
 }
